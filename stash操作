@@ -1,0 +1,4 @@
+git stash          把当前修改commit到一个临时缓存中.
+git stash list     查看缓存中的commit.
+git stash pop   把刚刚的修改再应用回来.
+git stash clear  清除临时commit.
