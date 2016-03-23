@@ -1,0 +1,6 @@
+在使用git更新命令时，产生错误：
+fatal: Untracked working tree file 'res/values/isdm_mms_defaults.xml' would be overwritten by merge.
+请问这个错误是什么原因引起的？该怎么解决呢？
+
+git checkout -- <文件名>
+然后在继续git pull等操作.
