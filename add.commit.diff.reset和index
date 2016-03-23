@@ -1,0 +1,185 @@
+细说add/commit/diff/rm/reset以及index
+
+创建测试仓库
+$ git init
+$ echo "line one"<< foo.txt
+$ git add foo.txt
+$ git commit -m "first commit"
+
+说说 add/reset/diff
+我们修改一下 foo.txt，看看效果。
+$ echo "line two"<< foo.txt
+$ git diff
+diff --git a/foo.txt b/foo.txt
+index 2d00bd5..e5c5c55 100644
+--- a/foo.txt
++++ b/foo.txt
+@@ -1+1,2@@
+ line one
++line two
+此时，git diff 可以看到修改内容，但不能 git commit 提交之。
+修改的内容，默认会处于 unstage 状态（修改了，但commit不提交），git status 可以看到状态。
+$ git status
+# On branch master
+# Changes not staged for commit:
+#   (use "git add ..." to update what will be committed)
+#   (use "git checkout -- ..." to discard changes in working directory)
+#
+#modified:   foo.txt
+#
+no changes added to commit (use "git add" and/or "git commit -a")
+如果想提交，需要显式 git add 一下。修改的文件状态会变为 staged。
+然后 git diff 就看不到修改内容了，而 git diff --cached 才能看到。
+当然，也可以用 git commit -a foo.txt 直接提交，而不需要显式 git add foo.txt。
+$ git add foo.txt
+$ git diff
+$ git diff --cached
+diff --git a/foo.txt b/foo.txt
+index 2d00bd5..e5c5c55 100644
+--- a/foo.txt
++++ b/foo.txt
+@@ -1+1,2@@
+ line one
++line two
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use "git reset HEAD ..." to unstage)
+#
+#modified:   foo.txt
+#
+这个优点，同时修改了两处代码，只想提交某一处修改，则显式 git add 想提交的文件即可。
+已经 git add 的文件，可以通过  git reset 来 un-add。
+$ git reset foo.txt
+Unstaged changes after reset:
+Mfoo.txt
+$ git diff --cached
+$ git diff
+diff --git a/foo.txt b/foo.txt
+index 2d00bd5..e5c5c55 100644
+--- a/foo.txt
++++ b/foo.txt
+@@ -1+1,2@@
+ line one
++line two
+如果要将 foo.txt 恢复到修改前的状态，可以 git checkout。
+$ git checkout foo.txt
+$ git diff
+$ git status
+# On branch master
+nothing to commit (working directory clean)
+
+rm、mv 和 log --follow
+先给仓库再加入个文件 bar.txt
+$ echo "barbar"<< bar.txt
+$ git add bar.txt
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use "git reset HEAD ..." to unstage)
+#
+#	new file:   bar.txt
+#
+此时，bar.txt 并没有通过 git commit 提交到仓库，如果想 unadd foo.txt，需要：
+$ git rm --cached bar.txt
+rm 'bar.txt'
+$ git status
+# On branch master
+# Untracked files:
+#   (use "git add ..." to include in what will be committed)
+#
+#bar.txt
+nothing added to commit but untracked files present (use "git add" to track)
+顺便说一下，对于未 git add 的文件，处于 untracked 状态。git commit 不会提交 untracked 的文件。
+对于已经 git add && commit 的文件，直接通过 git rm && commit 将起删除即可。
+$ git add bar.txt
+$ git commit -m "add bar.txt"
+[master 0fa635d] add bar.txt
+1 file changed,1 insertion(+)
+ create mode 100644 bar.txt
+$ git rm bar.txt
+rm 'bar.txt'
+$ git commit -m "remove bar.txt"
+[master fcdfd15] remove bar.txt
+1 file changed,1 deletion(-)
+delete mode 100644 bar.txt
+$ ls
+foo.txt
+我们还可以通过 git mv 来重命名文件。而 git log 的 --follow 参数，可以查看到文件 mv 之前的修改记录。
+$ git mv foo.txt rename.txt
+$ git commit -m "rename it"
+[master 788b36d] rename it
+1 file changed,0 insertions(+),0 deletions(-)
+ rename foo.txt =< rename.txt (100%)
+$ git log rename.txt
+commit 788b36d799e4f8cea226b29efe13e62ecadea7b8
+Author: kasicass < span>kasicass@gmail.com<
+Date:ThuApr410:29:472013+0800
+
+    rename it
+$ git log --follow rename.txt 
+commit 788b36d799e4f8cea226b29efe13e62ecadea7b8
+Author: kasicass < span>kasicass@gmail.com<
+Date:ThuApr410:29:472013+0800
+
+    rename it
+
+commit 3cc14639388770d01eb8db5fbe57f917584508bf
+Author: kasicass < span>kasicass@gmail.com<
+Date:ThuApr410:10:422013+0800
+
+    first commit
+
+深入理解 index
+git 中 index 的概念，就是“当前要提交的内容（tracks what you want to commit）”。
+我们先来修改一下 rename.txt 并 git add 之。
+$ echo "line two"<< rename.txt 
+$ git add rename.txt 
+$ git diff --cached
+diff --git a/rename.txt b/rename.txt
+index 2d00bd5..e5c5c55 100644
+--- a/rename.txt
++++ b/rename.txt
+@@ -1+1,2@@
+ line one
++line two
+我们再修改一下 rename.txt 的内容。
+你会发现 git diff 和 git diff --cached 的结果是不一样的。
+$ echo "line three"<< rename.txt 
+$ git diff
+diff --git a/rename.txt b/rename.txt
+index e5c5c55..0c2aa38100644
+--- a/rename.txt
++++ b/rename.txt
+@@ -1,2+1,3@@
+ line one
+ line two
++line three
+$ git diff --cached
+diff --git a/rename.txt b/rename.txt
+index 2d00bd5..e5c5c55 100644
+--- a/rename.txt
++++ b/rename.txt
+@@ -1+1,2@@
+ line one
++line two
+对的，git diff --cached 是查看即将提交到仓库的变化，而 git diff 是查看当前与 --cached 的变化。
+要想提交最新修改，还得再 git add rename.txt 一次。
+$ git add rename.txt 
+$ git diff
+$ git diff --cached
+diff --git a/rename.txt b/rename.txt
+index 2d00bd5..0c2aa38100644
+--- a/rename.txt
++++ b/rename.txt
+@@ -1+1,3@@
+ line one
++line two
++line three
+所以，可以理解为 current diff ==< index cache ==< repo。
+当前的修改，通过 git add 提交到 index cache，再通过 git commit 正式提交到 repo。
+
+
+ps.
+如果 git commit 没有 -m 参数，git 会启用 GIT_EDITOR 来编辑 message。
+$ export GIT_EDITOR=vim
