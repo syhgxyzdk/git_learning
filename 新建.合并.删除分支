@@ -1,0 +1,28 @@
+本地新建分支:
+1. git branch task12345
+
+新建远端分支, 即push新分支到远端:
+2. git push origin task12345
+
+合并task12345到master:
+先checkout到master
+git co master
+再merge:
+git merge task12345
+最后推送合并后的master到远端
+git push origin master
+
+3. 删除本地/远端分支:
+
+git br -D <branchName>
+在Git v1.7.0 之后，可以使用这种语法删除远程分支：
+git push origin --delete <branchName>
+删除tag这么用：
+git push origin --delete tag <tagname>
+否则，可以使用这种语法，推送一个空分支到远程分支，其实就相当于删除远程分支：
+git push origin :<branchName>
+
+这是删除tag的方法，推送一个空tag到远程tag：
+git tag -d <tagname>
+git push origin :refs/tags/<tagname>
+两种语法作用完全相同。
